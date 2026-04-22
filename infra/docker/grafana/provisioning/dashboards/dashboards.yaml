@@ -1,0 +1,18 @@
+# ============================================================
+# Grafana Dashboard Provider Provisioning
+# Points Grafana to the /var/lib/grafana/dashboards folder
+# ============================================================
+apiVersion: 1
+
+providers:
+  - name:            SmartSignal Dashboards
+    orgId:           1
+    folder:          Smart Signal System
+    folderUid:       smartsignal
+    type:            file
+    disableDeletion: true
+    updateIntervalSeconds: 30
+    allowUiUpdates:  false
+    options:
+      path:          /var/lib/grafana/dashboards
+      foldersFromFilesStructure: true

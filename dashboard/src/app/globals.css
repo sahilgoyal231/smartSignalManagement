@@ -1,0 +1,159 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Custom Aesthetic Color Palette */
+  --color-brand-50: #f0fdf4;
+  --color-brand-100: #dcfce7;
+  --color-brand-500: #22c55e;
+  --color-brand-600: #16a34a;
+  --color-brand-900: #14532d;
+  
+  --color-dark-surface: #0f172a;
+  --color-dark-panel: #1e293b;
+  --color-dark-border: #334155;
+  --color-dark-text-main: #f8fafc;
+  --color-dark-text-muted: #94a3b8;
+
+  --color-accent-amber: #f59e0b;
+  --color-accent-red: #ef4444;
+  --color-accent-blue: #3b82f6;
+  
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Base Styles enforcing Dark Mode exclusively */
+@layer base {
+  body {
+    background-color: var(--color-dark-surface);
+    color: var(--color-dark-text-main);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Glassmorphism Utilities */
+@layer utilities {
+  .glass-panel {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--color-dark-border);
+  }
+  
+  .glass-card {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+}
+
+/* ── Slide-in animation ──────────────────────────────────────────────────────── */
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+.animate-slide-in {
+  animation: slide-in 0.3s ease forwards;
+}
+
+/* ── Custom scrollbar ────────────────────────────────────────────────────────── */
+.custom-scrollbar::-webkit-scrollbar       { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-dark-border);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* ── Vehicle marker ──────────────────────────────────────────────────────────── */
+.vehicle-marker-wrapper {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+}
+
+.vehicle-dot {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px currentColor;
+  transition: transform 0.15s ease;
+}
+.vehicle-marker-wrapper:hover .vehicle-dot { transform: scale(1.15); }
+
+.vehicle-pulse-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid;
+  opacity: 0;
+  animation: vehicle-pulse 2s ease-out infinite;
+}
+@keyframes vehicle-pulse {
+  0%   { transform: scale(0.8); opacity: 0.8; }
+  80%  { transform: scale(1.5); opacity: 0;   }
+  100% { transform: scale(1.5); opacity: 0;   }
+}
+
+/* ── Edge-node marker ────────────────────────────────────────────────────────── */
+.node-marker-wrapper {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+.node-dot {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.25);
+  transition: transform 0.15s ease;
+}
+.node-marker-wrapper:hover .node-dot { transform: scale(1.2); }
+
+.node-pulse-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid;
+  opacity: 0;
+  animation: vehicle-pulse 1.4s ease-out infinite;
+}
+
+/* ── Mapbox popup overrides ──────────────────────────────────────────────────── */
+.mapbox-popup-dark .mapboxgl-popup-content {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 0;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  color: #f8fafc;
+}
+.mapbox-popup-dark .mapboxgl-popup-tip { display: none; }
+
+.map-popup           { padding: 12px 14px; min-width: 180px; }
+.map-popup-title     { font-weight: 600; font-size: 0.8rem; color: #f8fafc; }
+.map-popup-sub       { font-size: 0.68rem; color: #94a3b8; margin-top: 2px; margin-bottom: 8px; }
+.map-popup-row       {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  padding: 3px 0;
+  border-top: 1px solid #1e293b;
+}
+.map-popup-row span:last-child { color: #f8fafc; font-weight: 500; }
+
+/* Hide default Mapbox attribution branding clutter */
+.mapboxgl-ctrl-logo  { display: none !important; }
+.mapboxgl-ctrl-attrib-button { display: none !important; }
+

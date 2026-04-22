@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: route-engine
+  namespace: smart-signal
+  labels:
+    app: route-engine
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: route-engine
+  template:
+    metadata:
+      labels:
+        app: route-engine
+    spec:
+      containers:
+      - name: route-engine
+        image: smartsignal/route-engine:latest
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: smart-signal-config
+        - secretRef:
+            name: smart-signal-secrets
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "2000m"
+            memory: "2Gi"
+        # No port exposed as route-engine is purely a Kafka stream processor

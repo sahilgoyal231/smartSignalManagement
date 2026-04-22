@@ -1,0 +1,326 @@
+version: "3.9"
+
+# ============================================================
+# 🚦 Smart Signal System — Full Local Dev Stack
+# ============================================================
+# Services:
+#   - postgres        : Vehicle registry, event log (Port 5432)
+#   - influxdb        : Time-series telemetry (Port 8086)
+#   - redis           : Real-time intersection state cache (Port 6379)
+#   - emqx            : MQTT broker for all IoT messaging (Ports 1883, 8883, 18083)
+#   - zookeeper       : Required by Kafka
+#   - kafka           : Event streaming backbone (Port 9092)
+#   - grafana         : Monitoring dashboard (Port 3001)
+#   - cloud-api       : FastAPI cloud backend (Port 8000)
+#
+# Usage:
+#   docker-compose up -d               # start all
+#   docker-compose up -d postgres      # start single service
+#   docker-compose logs -f cloud-api   # tail logs
+#   docker-compose down -v             # stop + remove volumes
+# ============================================================
+
+networks:
+  smartsignal-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+
+volumes:
+  postgres_data:
+  influxdb_data:
+  influxdb_config:
+  redis_data:
+  emqx_data:
+  emqx_log:
+  kafka_data:
+  grafana_data:
+
+services:
+
+  # ──────────────────────────────────────────────────────────
+  # PostgreSQL 15
+  # ──────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: ss_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB:-smart_signal}
+      POSTGRES_USER:     ${POSTGRES_USER:-ss_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      smartsignal-net:
+        ipv4_address: 172.20.0.10
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ss_admin} -d ${POSTGRES_DB:-smart_signal}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ──────────────────────────────────────────────────────────
+  # InfluxDB 2.x
+  # ──────────────────────────────────────────────────────────
+  influxdb:
+    image: influxdb:2.7-alpine
+    container_name: ss_influxdb
+    restart: unless-stopped
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE:        setup
+      DOCKER_INFLUXDB_INIT_USERNAME:    ${INFLUX_ADMIN_USER:-admin}
+      DOCKER_INFLUXDB_INIT_PASSWORD:    ${INFLUX_ADMIN_PASSWORD:-adminchangeme}
+      DOCKER_INFLUXDB_INIT_ORG:         ${INFLUX_ORG:-SmartSignal}
+      DOCKER_INFLUXDB_INIT_BUCKET:      ${INFLUX_BUCKET:-telemetry}
+      DOCKER_INFLUXDB_INIT_RETENTION:   720h       # 30 days
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUX_TOKEN:-devtoken-changeme}
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+      - influxdb_config:/etc/influxdb2
+    ports:
+      - "8086:8086"
+    networks:
+      smartsignal-net:
+        ipv4_address: 172.20.0.11
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ──────────────────────────────────────────────────────────
+  # Redis 7 (with persistence)
+  # ──────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: ss_redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-redischangeme}
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      smartsignal-net:
+        ipv4_address: 172.20.0.12
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redischangeme}", "PING"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ──────────────────────────────────────────────────────────
+  # EMQX 5 — MQTT Broker (IoT messaging backbone)
+  # ──────────────────────────────────────────────────────────
+  emqx:
+    image: emqx/emqx:5.7.0
+    container_name: ss_emqx
+    restart: unless-stopped
+    environment:
+      EMQX_NAME:                    smartsignal
+      EMQX_HOST:                    172.20.0.13
+      EMQX_DASHBOARD__DEFAULT_USERNAME: ${EMQX_DASHBOARD_USER:-admin}
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: ${EMQX_DASHBOARD_PASS:-adminchangeme}
+      EMQX_MQTT__MAX_PACKET_SIZE:   10MB
+      EMQX_MQTT__MAX_INFLIGHT:      128
+      # Enable auth via username/password
+      EMQX_AUTHENTICATION__1__MECHANISM:    password_based
+      EMQX_AUTHENTICATION__1__BACKEND:      built_in_database
+      EMQX_AUTHENTICATION__1__PASSWORD_HASH_ALGORITHM__NAME: bcrypt
+    volumes:
+      - emqx_data:/opt/emqx/data
+      - emqx_log:/opt/emqx/log
+      - ./emqx/acl.conf:/opt/emqx/etc/acl.conf:ro
+    ports:
+      - "1883:1883"    # MQTT (plain — local dev only)
+      - "8883:8883"    # MQTT over TLS (production)
+      - "8083:8083"    # MQTT over WebSocket
+      - "18083:18083"  # EMQX Web dashboard
+    networks:
+      smartsignal-net:
+        ipv4_address: 172.20.0.13
+    healthcheck:
+      test: ["CMD", "emqx", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ──────────────────────────────────────────────────────────
+  # Zookeeper (required by Kafka)
+  # ──────────────────────────────────────────────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: ss_zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME:   2000
+    networks:
+      smartsignal-net:
+        ipv4_address: 172.20.0.14
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo ruok | nc localhost 2181"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────────────────────
+  # Kafka (event streaming backbone)
+  # ──────────────────────────────────────────────────────────
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: ss_kafka
+    restart: unless-stopped
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID:                        1
+      KAFKA_ZOOKEEPER_CONNECT:                zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS:             PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP:   PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME:       PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE:        "true"
+      # Pre-create topics
+      KAFKA_CREATE_TOPICS: >
+        vehicle.update:3:1,
+        node.preempt:3:1,
+        node.alert:3:1,
+        system.fault:1:1,
+        node.heartbeat:1:1
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    ports:
+      - "9092:9092"
+      - "29092:29092"    # External access from host
+    networks:
+      smartsignal-net:
+        ipv4_address: 172.20.0.15
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # ──────────────────────────────────────────────────────────
+  # Grafana (monitoring & KPI dashboards)
+  # ──────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: ss_grafana
+    restart: unless-stopped
+    depends_on:
+      influxdb:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER:     ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-grafanachangeme}
+      GF_SERVER_HTTP_PORT:        3001
+      GF_INSTALL_PLUGINS:         grafana-worldmap-panel,grafana-clock-panel
+      # Pre-configured datasource env vars (used in provisioning templates)
+      INFLUX_URL:    http://influxdb:8086
+      INFLUX_TOKEN:  ${INFLUX_TOKEN:-devtoken-changeme}
+      INFLUX_ORG:    ${INFLUX_ORG:-SmartSignal}
+      INFLUX_BUCKET: ${INFLUX_BUCKET:-telemetry}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB:   ${POSTGRES_DB:-smart_signal}
+      POSTGRES_USER: ${POSTGRES_USER:-ss_admin}
+      POSTGRES_PASS: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3001:3001"
+    networks:
+      smartsignal-net:
+        ipv4_address: 172.20.0.16
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3001/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ──────────────────────────────────────────────────────────
+  # Cloud API (FastAPI)
+  # ──────────────────────────────────────────────────────────
+  cloud-api:
+    build:
+      context: ../../
+      dockerfile: infra/docker/Dockerfile.cloud
+    container_name: ss_cloud_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      emqx:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT:         development
+      # PostgreSQL (connects to the postgres service by container name)
+      POSTGRES_HOST:       postgres
+      POSTGRES_PORT:       5432
+      POSTGRES_DB:         ${POSTGRES_DB:-smart_signal}
+      POSTGRES_USER:       ${POSTGRES_USER:-ss_admin}
+      POSTGRES_PASSWORD:   ${POSTGRES_PASSWORD:-changeme}
+      # InfluxDB
+      INFLUX_URL:          http://influxdb:8086
+      INFLUX_TOKEN:        ${INFLUX_TOKEN:-devtoken-changeme}
+      INFLUX_ORG:          ${INFLUX_ORG:-SmartSignal}
+      INFLUX_BUCKET:       ${INFLUX_BUCKET:-telemetry}
+      # Redis
+      REDIS_HOST:          redis
+      REDIS_PORT:          6379
+      REDIS_PASSWORD:      ${REDIS_PASSWORD:-redischangeme}
+      # MQTT (EMQX)
+      MQTT_BROKER_HOST:    emqx
+      MQTT_BROKER_PORT:    1883          # plain inside docker network
+      MQTT_BROKER_USER:    ${MQTT_BROKER_USER:-ss_service}
+      MQTT_BROKER_PASSWORD: ${MQTT_BROKER_PASSWORD:-mqttchangeme}
+      # Kafka
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_CONSUMER_GROUP:    smart-signal-group
+      # JWT
+      JWT_SECRET_KEY:      ${JWT_SECRET_KEY:-devjwtsecret}
+      JWT_ALGORITHM:       RS256
+    volumes:
+      - ../../cloud:/app/cloud
+      - ../../.env:/app/.env:ro
+    ports:
+      - "8000:8000"
+    networks:
+      smartsignal-net:
+        ipv4_address: 172.20.0.20
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s

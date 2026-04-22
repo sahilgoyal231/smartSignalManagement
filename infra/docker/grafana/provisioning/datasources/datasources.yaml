@@ -1,0 +1,42 @@
+# ============================================================
+# Grafana Datasource Provisioning
+# Automatically configures InfluxDB + PostgreSQL on startup
+# ============================================================
+apiVersion: 1
+
+datasources:
+
+  # ── InfluxDB (Flux query language) ──────────────────────
+  - name: InfluxDB-SmartSignal
+    type: influxdb
+    uid: influxdb_ss
+    access: proxy
+    url: ${INFLUX_URL}
+    jsonData:
+      version:              Flux
+      organization:         ${INFLUX_ORG}
+      defaultBucket:        ${INFLUX_BUCKET}
+      tlsSkipVerify:        true
+    secureJsonData:
+      token: ${INFLUX_TOKEN}
+    isDefault: true
+    editable: false
+
+  # ── PostgreSQL (for registry + event queries) ────────────
+  - name: PostgreSQL-SmartSignal
+    type: postgres
+    uid: postgres_ss
+    access: proxy
+    url: ${POSTGRES_HOST}:${POSTGRES_PORT}
+    database: ${POSTGRES_DB}
+    user: ${POSTGRES_USER}
+    secureJsonData:
+      password: ${POSTGRES_PASS}
+    jsonData:
+      sslmode:          disable
+      maxOpenConns:     5
+      maxIdleConns:     2
+      connMaxLifetime:  14400
+      postgresVersion:  1500
+      timescaledb:      false
+    editable: false

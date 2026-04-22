@@ -1,0 +1,133 @@
+# ============================================================
+# 🚦 Smart Signal System — .gitignore
+# ============================================================
+
+# ── Python ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.whl
+.installed.cfg
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments (all variants)
+.venv/
+.venv_*/
+venv/
+env/
+ENV/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.junit.xml
+test-results/
+coverage/
+*.lcov
+
+# ── Node.js ──────────────────────────────────────────────────
+node_modules/
+.next/
+.nuxt/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+*.tsbuildinfo
+
+# ── Environment & Secrets — NEVER commit these ───────────────
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.staging
+# NOTE: .env.example IS safe to commit (has placeholder values)
+
+# ── Certificates & Private Keys ─────────────────────────────
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+certs/
+secrets/
+
+# ── Databases (local dev) ───────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# ── OSMnx / Route Engine graph cache ────────────────────────
+cache/
+
+# ── Logs ─────────────────────────────────────────────────────
+.logs/
+logs/
+*.log
+*.log.*
+
+# ── Terraform ────────────────────────────────────────────────
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.backup
+infra/terraform/*.tfvars
+infra/terraform/.terraform.lock.hcl
+
+# ── ML Models (too large for git — use DVC or S3) ───────────
+*.pt
+*.onnx
+*.tflite
+*.h5
+models/weights/
+
+# ── IDE & Editor ─────────────────────────────────────────────
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ── macOS ────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Icon
+
+# ── Windows ──────────────────────────────────────────────────
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ── Docker ───────────────────────────────────────────────────
+.docker/
+
+# ── Vercel ───────────────────────────────────────────────────
+.vercel
