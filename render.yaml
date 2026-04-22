@@ -1,0 +1,54 @@
+services:
+  - type: web
+    name: event-service
+    env: python
+    buildCommand: "pip install -r cloud/requirements.txt"
+    startCommand: "uvicorn cloud.services.event_service.main:app --host 0.0.0.0 --port 10000"
+    envVars:
+      - key: PORT
+        value: 10000
+
+  - type: web
+    name: health-monitor
+    env: python
+    buildCommand: "pip install -r cloud/requirements.txt"
+    startCommand: "uvicorn cloud.services.health_monitor.main:app --host 0.0.0.0 --port 10000"
+    envVars:
+      - key: PORT
+        value: 10000
+
+  - type: web
+    name: ota-service
+    env: python
+    buildCommand: "pip install -r cloud/requirements.txt"
+    startCommand: "uvicorn cloud.services.ota_service.main:app --host 0.0.0.0 --port 10000"
+    envVars:
+      - key: PORT
+        value: 10000
+
+  - type: web
+    name: priority-queue
+    env: python
+    buildCommand: "pip install -r cloud/requirements.txt"
+    startCommand: "uvicorn cloud.services.priority_queue.main:app --host 0.0.0.0 --port 10000"
+    envVars:
+      - key: PORT
+        value: 10000
+
+  - type: web
+    name: route-engine
+    env: python
+    buildCommand: "pip install -r cloud/requirements.txt"
+    startCommand: "uvicorn cloud.services.route_engine.main:app --host 0.0.0.0 --port 10000"
+    envVars:
+      - key: PORT
+        value: 10000
+
+  - type: web
+    name: vehicle-registry
+    env: python
+    buildCommand: "pip install -r cloud/requirements.txt"
+    startCommand: "uvicorn cloud.services.vehicle_registry.main:app --host 0.0.0.0 --port 10000"
+    envVars:
+      - key: PORT
+        value: 10000
