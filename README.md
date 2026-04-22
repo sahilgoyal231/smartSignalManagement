@@ -57,6 +57,8 @@ smart-signal-system/
 
 ## 🚀 Quick Start
 
+**Note:** For a comprehensive, step-by-step guide on how to run this project natively on your local machine (macOS/Linux), please see the [**Local Setup & Installation Guide**](SETUP.md).
+
 ### Prerequisites
 - Python 3.11+
 - Node.js 20+
