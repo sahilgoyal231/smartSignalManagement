@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Car, LayoutDashboard, Settings, Map as MapIcon } from "lucide-react";
+import { Activity, Car, LayoutDashboard, Settings, Map as MapIcon, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
     { name: "Live Map", href: "/map", icon: MapIcon },
     { name: "Edge Nodes", href: "/nodes", icon: Activity },
     { name: "Fleet Registry", href: "/vehicles", icon: Car },
+    { name: "Event Log", href: "/events", icon: FileText },
     { name: "Settings", href: "/settings", icon: Settings },
 ];
 

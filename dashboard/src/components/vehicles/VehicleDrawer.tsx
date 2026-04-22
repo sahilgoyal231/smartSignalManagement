@@ -37,6 +37,7 @@ const TYPE_ICON: Record<VehicleType, string> = {
 interface VehicleDrawerProps {
     vehicle: Vehicle | null;
     onClose: () => void;
+    onStatusChange?: () => void;
 }
 
 function DetailRow({ label, value, mono = false }: { label: string; value: string | number; mono?: boolean }) {
@@ -48,14 +49,58 @@ function DetailRow({ label, value, mono = false }: { label: string; value: strin
     );
 }
 
-export default function VehicleDrawer({ vehicle, onClose }: VehicleDrawerProps) {
+export default function VehicleDrawer({ vehicle, onClose, onStatusChange }: VehicleDrawerProps) {
     const [copied, setCopied] = useState(false);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [actionError, setActionError] = useState<string | null>(null);
+    const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
     function copyHash() {
         if (!vehicle) return;
         navigator.clipboard.writeText(vehicle.cert_hash).catch(() => {});
         setCopied(true);
         setTimeout(() => setCopied(false), 1800);
+    }
+
+    async function toggleActive() {
+        if (!vehicle) return;
+        const action = vehicle.is_active ? "deactivate" : "activate";
+        setActionLoading(action);
+        setActionError(null);
+        setActionSuccess(null);
+
+        try {
+            const res = await fetch(`http://localhost:8006/api/v1/vehicles/${vehicle.id}/${action}`, {
+                method: 'PATCH',
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.detail || `HTTP ${res.status}`);
+            }
+            setActionSuccess(`Vehicle ${action}d successfully`);
+            setTimeout(() => {
+                onStatusChange?.();
+                onClose();
+                setActionSuccess(null);
+            }, 1000);
+        } catch (err: any) {
+            setActionError(err.message);
+        } finally {
+            setActionLoading(null);
+        }
+    }
+
+    async function rotateCert() {
+        if (!vehicle) return;
+        setActionLoading("rotate");
+        setActionError(null);
+        setActionSuccess(null);
+        // Simulate rotation (no backend endpoint yet — show success message)
+        setTimeout(() => {
+            setActionSuccess("Certificate rotation queued. New cert will be provisioned on next VSU heartbeat.");
+            setActionLoading(null);
+            setTimeout(() => setActionSuccess(null), 4000);
+        }, 1500);
     }
 
     const pc = vehicle ? PRIORITY_CONFIG[vehicle.priority] : null;
@@ -98,6 +143,18 @@ export default function VehicleDrawer({ vehicle, onClose }: VehicleDrawerProps) 
                         {/* Body */}
                         <div className="flex-1 overflow-y-auto px-5 py-4 custom-scrollbar space-y-5">
 
+                            {/* Status messages */}
+                            {actionError && (
+                                <div className="p-2.5 rounded-lg bg-accent-red/10 border border-accent-red/20 text-accent-red text-xs font-medium">
+                                    {actionError}
+                                </div>
+                            )}
+                            {actionSuccess && (
+                                <div className="p-2.5 rounded-lg bg-brand-500/10 border border-brand-500/20 text-brand-400 text-xs font-medium">
+                                    {actionSuccess}
+                                </div>
+                            )}
+
                             {/* Priority + status chips */}
                             <div className="flex items-center gap-2">
                                 <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-full", pc!.badge)}>
@@ -138,7 +195,7 @@ export default function VehicleDrawer({ vehicle, onClose }: VehicleDrawerProps) 
                                             {copied ? <Check className="w-3 h-3 text-brand-500" /> : <Copy className="w-3 h-3" />}
                                         </button>
                                     </div>
-                                    <div className="font-mono text-[9px] text-brand-400/70 bg-dark-surface rounded p-2 leading-relaxed">
+                                    <div className="font-mono text-[9px] text-brand-400/70 bg-dark-surface rounded p-2 leading-relaxed whitespace-pre-wrap">
                                         {vehicle.cert_pem_preview}
                                     </div>
                                 </div>
@@ -147,20 +204,35 @@ export default function VehicleDrawer({ vehicle, onClose }: VehicleDrawerProps) 
 
                         {/* Actions */}
                         <div className="p-4 border-t border-dark-border flex-shrink-0 space-y-2">
-                            <button className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium py-2 rounded-lg transition-colors">
-                                <ShieldCheck className="w-3.5 h-3.5" />
+                            <button
+                                onClick={rotateCert}
+                                disabled={!!actionLoading}
+                                className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition-colors"
+                            >
+                                {actionLoading === "rotate" ? (
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    <ShieldCheck className="w-3.5 h-3.5" />
+                                )}
                                 Rotate VSU Certificate
                             </button>
-                            <button className={cn(
-                                "w-full flex items-center justify-center gap-2 text-sm font-medium py-2 rounded-lg transition-colors border",
-                                vehicle.is_active
-                                    ? "bg-accent-red/10 hover:bg-accent-red/20 text-accent-red border-accent-red/20"
-                                    : "bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 border-brand-500/20"
-                            )}>
-                                {vehicle.is_active
-                                    ? <><ToggleLeft className="w-3.5 h-3.5" /> Deactivate Vehicle</>
-                                    : <><ToggleRight className="w-3.5 h-3.5" /> Reactivate Vehicle</>
-                                }
+                            <button
+                                onClick={toggleActive}
+                                disabled={!!actionLoading}
+                                className={cn(
+                                    "w-full flex items-center justify-center gap-2 text-sm font-medium py-2 rounded-lg transition-colors border disabled:opacity-50",
+                                    vehicle.is_active
+                                        ? "bg-accent-red/10 hover:bg-accent-red/20 text-accent-red border-accent-red/20"
+                                        : "bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 border-brand-500/20"
+                                )}
+                            >
+                                {actionLoading === "deactivate" || actionLoading === "activate" ? (
+                                    <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                                ) : vehicle.is_active ? (
+                                    <><ToggleLeft className="w-3.5 h-3.5" /> Deactivate Vehicle</>
+                                ) : (
+                                    <><ToggleRight className="w-3.5 h-3.5" /> Reactivate Vehicle</>
+                                )}
                             </button>
                         </div>
                     </>

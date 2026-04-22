@@ -116,6 +116,8 @@ class VehicleResponse(BaseModel):
     is_active: bool
     registered_at: datetime
     last_seen: Optional[datetime] = None
+    vsu_cert_hash: Optional[str] = None
+    vsu_cert_pem: Optional[str] = None
 
 
 # ─────────────────────────────────────────────

@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { Search, Plus, Car, ShieldCheck, Users } from "lucide-react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { Search, Plus, Car, ShieldCheck, Users, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import VehicleDrawer, { Vehicle, VehicleType, PriorityClass } from "@/components/vehicles/VehicleDrawer";
 
-// ── Live Data Fetching ───────────────────────────────────────────────────────
+// ── Constants ────────────────────────────────────────────────────────────────
 
-// ── Live Data Fetching ───────────────────────────────────────────────────────
 const TYPE_ICON: Record<VehicleType, string> = {
     AMBULANCE: "🚑",
     FIRE:      "🚒",
@@ -26,45 +25,223 @@ const PRIORITY_LABELS: Record<PriorityClass, string> = {
 
 type TypeFilter = "ALL" | VehicleType;
 
+// ── Register Vehicle Modal ──────────────────────────────────────────────────
+
+function RegisterVehicleModal({ open, onClose, onSuccess }: {
+    open: boolean;
+    onClose: () => void;
+    onSuccess: () => void;
+}) {
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const [form, setForm] = useState({
+        vehicle_id: "",
+        vehicle_type: "AMBULANCE" as VehicleType,
+        priority_class: 2,
+        license_plate: "",
+        agency_name: "",
+        city: "Mumbai",
+        cert_pem: "-----BEGIN CERTIFICATE-----\nDEV_PLACEHOLDER_CERT\n-----END CERTIFICATE-----",
+    });
+
+    const updateField = (key: string, value: string | number) =>
+        setForm(prev => ({ ...prev, [key]: value }));
+
+    async function handleSubmit(e: React.FormEvent) {
+        e.preventDefault();
+        setSubmitting(true);
+        setError(null);
+
+        try {
+            const res = await fetch('http://localhost:8006/api/v1/vehicles', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(form),
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.detail || `HTTP ${res.status}`);
+            }
+
+            onSuccess();
+            onClose();
+            // Reset form
+            setForm(prev => ({ ...prev, vehicle_id: "", license_plate: "", agency_name: "" }));
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
+    if (!open) return null;
+
+    return (
+        <>
+            <div className="fixed inset-0 bg-black/60 z-50" onClick={onClose} />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="glass-panel rounded-2xl w-full max-w-lg shadow-2xl animate-slide-in" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-between p-5 border-b border-dark-border">
+                        <div>
+                            <h2 className="text-lg font-semibold text-white">Register New Vehicle</h2>
+                            <p className="text-xs text-dark-text-muted">Provision a VSU certificate for a new emergency vehicle</p>
+                        </div>
+                        <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg text-dark-text-muted hover:text-white transition-colors">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                        {error && (
+                            <div className="p-3 rounded-lg bg-accent-red/10 border border-accent-red/20 text-accent-red text-xs font-medium">
+                                {error}
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs text-dark-text-muted font-medium mb-1 block">Vehicle ID *</label>
+                                <input
+                                    required
+                                    value={form.vehicle_id}
+                                    onChange={e => updateField("vehicle_id", e.target.value)}
+                                    placeholder="AMB-MH-004"
+                                    className="w-full bg-dark-surface border border-dark-border rounded-lg px-3 py-2 text-sm text-white placeholder-dark-text-muted focus:outline-none focus:border-brand-500 transition-colors"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs text-dark-text-muted font-medium mb-1 block">License Plate *</label>
+                                <input
+                                    required
+                                    value={form.license_plate}
+                                    onChange={e => updateField("license_plate", e.target.value)}
+                                    placeholder="MH01XX9999"
+                                    className="w-full bg-dark-surface border border-dark-border rounded-lg px-3 py-2 text-sm text-white placeholder-dark-text-muted focus:outline-none focus:border-brand-500 transition-colors"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-xs text-dark-text-muted font-medium mb-1 block">Agency Name *</label>
+                            <input
+                                required
+                                value={form.agency_name}
+                                onChange={e => updateField("agency_name", e.target.value)}
+                                placeholder="KEM Hospital EMS"
+                                className="w-full bg-dark-surface border border-dark-border rounded-lg px-3 py-2 text-sm text-white placeholder-dark-text-muted focus:outline-none focus:border-brand-500 transition-colors"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
+                                <label className="text-xs text-dark-text-muted font-medium mb-1 block">Type</label>
+                                <select
+                                    value={form.vehicle_type}
+                                    onChange={e => updateField("vehicle_type", e.target.value)}
+                                    className="w-full bg-dark-surface border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500 transition-colors"
+                                >
+                                    <option value="AMBULANCE">🚑 Ambulance</option>
+                                    <option value="FIRE">🚒 Fire</option>
+                                    <option value="POLICE">🚔 Police</option>
+                                    <option value="DISASTER">🚐 Disaster</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs text-dark-text-muted font-medium mb-1 block">Priority</label>
+                                <select
+                                    value={form.priority_class}
+                                    onChange={e => updateField("priority_class", Number(e.target.value))}
+                                    className="w-full bg-dark-surface border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500 transition-colors"
+                                >
+                                    <option value={1}>P1 — Critical</option>
+                                    <option value={2}>P2 — High</option>
+                                    <option value={3}>P3 — Standard</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs text-dark-text-muted font-medium mb-1 block">City</label>
+                                <input
+                                    value={form.city}
+                                    onChange={e => updateField("city", e.target.value)}
+                                    className="w-full bg-dark-surface border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500 transition-colors"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="pt-2 flex gap-3">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="flex-1 px-4 py-2.5 glass-card rounded-lg text-sm text-dark-text-muted hover:text-white transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={submitting}
+                                className="flex-1 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                            >
+                                {submitting ? (
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    <>
+                                        <ShieldCheck className="w-4 h-4" />
+                                        Register
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </>
+    );
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────────
+
 export default function VehiclesPage() {
     // API Data state
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showRegisterModal, setShowRegisterModal] = useState(false);
+
+    const fetchVehicles = useCallback(async () => {
+        try {
+            const res = await fetch('http://localhost:8006/api/v1/vehicles?active_only=false');
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            const data = await res.json();
+            
+            const mapped: Vehicle[] = data.map((v: any) => ({
+                id: v.vehicle_id,
+                type: v.vehicle_type,
+                license_plate: v.license_plate,
+                agency: v.agency_name,
+                priority: v.priority_class as PriorityClass,
+                city: v.city,
+                cert_hash: v.vsu_cert_hash || "N/A",
+                registered_at: new Date(v.registered_at).toLocaleDateString(),
+                last_seen: v.last_seen ? new Date(v.last_seen).toLocaleTimeString() : 'Never',
+                is_active: v.is_active,
+                cert_pem_preview: v.vsu_cert_pem || "N/A",
+            }));
+            
+            setVehicles(mapped);
+            setError(null);
+        } catch (e: any) {
+            console.error("Failed to fetch vehicles:", e);
+            setError(e.message);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
-        async function fetchVehicles() {
-            try {
-                // Fetch vehicles (registry service is on port 8006, not 8001)
-                const res = await fetch('http://localhost:8006/api/v1/vehicles');
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                const data = await res.json();
-                
-                // Map backend model to frontend model
-                const mapped: Vehicle[] = data.map((v: any) => ({
-                    id: v.vehicle_id,
-                    type: v.vehicle_type,
-                    license_plate: v.license_plate,
-                    agency: v.agency_name,
-                    priority: v.priority_class as PriorityClass,
-                    city: v.city,
-                    cert_hash: v.vsu_cert_hash,
-                    registered_at: new Date(v.created_at).toLocaleDateString(),
-                    last_seen: v.last_seen ? new Date(v.last_seen).toLocaleTimeString() : 'Never',
-                    is_active: v.is_active,
-                    cert_pem_preview: v.vsu_cert_pem,
-                }));
-                
-                setVehicles(mapped);
-            } catch (e: any) {
-                console.error("Failed to fetch vehicles:", e);
-                setError(e.message);
-            } finally {
-                setIsLoading(false);
-            }
-        }
         fetchVehicles();
-    }, []);
+    }, [fetchVehicles]);
 
     // Derived state
     const [search, setSearch]           = useState("");
@@ -105,6 +282,7 @@ export default function VehiclesPage() {
                 </div>
                 <button
                     id="register-vehicle-btn"
+                    onClick={() => setShowRegisterModal(true)}
                     className="flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
                 >
                     <Plus className="w-4 h-4" />
@@ -202,7 +380,19 @@ export default function VehiclesPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filtered.length === 0 ? (
+                            {isLoading ? (
+                                <tr>
+                                    <td colSpan={9} className="py-16 text-center text-dark-text-muted text-sm animate-pulse">
+                                        Loading fleet registry...
+                                    </td>
+                                </tr>
+                            ) : error ? (
+                                <tr>
+                                    <td colSpan={9} className="py-16 text-center text-accent-red text-sm">
+                                        Failed to connect: {error}
+                                    </td>
+                                </tr>
+                            ) : filtered.length === 0 ? (
                                 <tr>
                                     <td colSpan={9} className="py-16 text-center text-dark-text-muted text-sm">
                                         No vehicles match your filters.
@@ -293,7 +483,14 @@ export default function VehiclesPage() {
             </div>
 
             {/* Drawer */}
-            <VehicleDrawer vehicle={selectedVehicle} onClose={() => setSelectedVehicle(null)} />
+            <VehicleDrawer vehicle={selectedVehicle} onClose={() => setSelectedVehicle(null)} onStatusChange={fetchVehicles} />
+
+            {/* Register Modal */}
+            <RegisterVehicleModal
+                open={showRegisterModal}
+                onClose={() => setShowRegisterModal(false)}
+                onSuccess={fetchVehicles}
+            />
         </div>
     );
 }

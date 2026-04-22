@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { VehicleType, MockVehicle } from "@/components/map/MapboxMap";
+import { VehicleType } from "@/components/map/LeafletMap";
 
 export interface MockEvent {
     id: string;

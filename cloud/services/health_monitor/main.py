@@ -241,3 +241,36 @@ async def list_nodes():
         result = await db.execute(select(EdgeNode))
         nodes = result.scalars().all()
         return nodes
+
+
+@app.post("/api/v1/nodes", status_code=status.HTTP_201_CREATED)
+async def create_node(body: dict):
+    """Register a new edge node in the system."""
+    from datetime import datetime, timezone
+
+    async for db in get_db():
+        # Check if node_id already exists
+        existing = await db.execute(select(EdgeNode).where(EdgeNode.node_id == body["node_id"]))
+        if existing.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Node '{body['node_id']}' already exists."
+            )
+
+        node = EdgeNode(
+            node_id=body["node_id"],
+            intersection_name=body["intersection_name"],
+            city=body.get("city", "Mumbai"),
+            location_lat=body["location_lat"],
+            location_lon=body["location_lon"],
+            firmware_version=body.get("firmware_version", "2.3.1"),
+            controller_type=body.get("controller_type", "PLC_NTCIP"),
+            is_online=body.get("is_online", True),
+            last_heartbeat=datetime.now(timezone.utc),
+        )
+        db.add(node)
+        await db.commit()
+        await db.refresh(node)
+        logger.info(f"Registered new edge node: {node.node_id} at {node.intersection_name}")
+        return node
+
