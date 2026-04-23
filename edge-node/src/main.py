@@ -47,7 +47,7 @@ async def heartbeat_loop(mqtt_client: EdgeMqttClient, signal_ctrl: SignalControl
         await asyncio.sleep(10.0)
 
 async def preemption_evaluator(
-    fusion_engine: SensorFusionEngine, 
+    fusion_engine: SensorFusionEngine,
     eta_predictor: KinematicPredictor,
     signal_ctrl: SignalController,
     mqtt_client: EdgeMqttClient
