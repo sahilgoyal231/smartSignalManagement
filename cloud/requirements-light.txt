@@ -1,0 +1,45 @@
+# ==============================================
+# Cloud Backend Requirements — LIGHTWEIGHT
+# ==============================================
+# This file excludes heavy geo/ML packages (osmnx, scikit-learn)
+# that require system-level C libraries (GDAL, proj, geos).
+# Use this for all services EXCEPT route-engine.
+# ==============================================
+
+# Web framework
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+python-multipart==0.0.9
+
+# Database
+asyncpg==0.29.0              # Async PostgreSQL driver
+sqlalchemy[asyncio]==2.0.30
+alembic==1.13.1               # DB migrations
+
+# InfluxDB
+influxdb-client==1.44.0
+
+# Redis (caching + pub/sub)
+redis[asyncio]==5.0.4
+
+
+# MQTT
+paho-mqtt==2.1.0
+aiomqtt==2.3.0
+
+# Authentication
+python-jose[cryptography]==3.3.0   # JWT
+passlib[bcrypt]==1.7.4
+cryptography==42.0.5
+
+# HTTP client (inter-service)
+httpx==0.27.0
+
+# Utilities
+python-dotenv==1.0.1
+loguru==0.7.2
+pydantic==2.7.1               # Data validation (FastAPI uses this)
+pydantic-settings==2.3.4
+
+# Async SQLite (for local dev fallback)
+aiosqlite==0.20.0

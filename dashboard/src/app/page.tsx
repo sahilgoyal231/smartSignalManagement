@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Activity, Radio, ShieldAlert, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import DashboardMapWidget from "@/components/map/DashboardMapWidget";
 import LiveFeed from "@/components/map/LiveFeed";
+import { API } from "@/lib/api";
 
 interface DashboardStats {
   totalNodes: number;
@@ -24,9 +25,9 @@ export default function OverviewPage() {
     async function fetchStats() {
       try {
         const [vRes, nRes, eRes] = await Promise.all([
-          fetch('http://localhost:8006/api/v1/vehicles?active_only=false'),
-          fetch('http://localhost:8002/api/v1/nodes'),
-          fetch('http://localhost:8001/api/v1/events'),
+          fetch(`${API.VEHICLE_REGISTRY}/api/v1/vehicles?active_only=false`),
+          fetch(`${API.EDGE_REGISTRY}/api/v1/nodes`),
+          fetch(`${API.EVENT_SERVICE}/api/v1/events`),
         ]);
 
         const vehicles = await vRes.json();

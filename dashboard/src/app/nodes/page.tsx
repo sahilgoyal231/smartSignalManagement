@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Search, Plus, Activity, WifiOff, Zap, Server, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { API } from "@/lib/api";
 import NodeRow, { EdgeNode } from "@/components/nodes/NodeRow";
 import NodeDrawer from "@/components/nodes/NodeDrawer";
 
@@ -44,7 +45,7 @@ function AddNodeModal({ open, onClose, onSuccess }: {
         setError(null);
 
         try {
-            const res = await fetch('http://localhost:8002/api/v1/nodes', {
+            const res = await fetch(`${API.EDGE_REGISTRY}/api/v1/nodes`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -217,7 +218,7 @@ export default function NodesPage() {
 
     const fetchNodes = useCallback(async () => {
         try {
-            const res = await fetch('http://localhost:8002/api/v1/nodes');
+            const res = await fetch(`${API.EDGE_REGISTRY}/api/v1/nodes`);
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
             const data = await res.json();
             

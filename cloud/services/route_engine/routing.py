@@ -1,6 +1,14 @@
-import osmnx as ox
-import networkx as nx
-from geopy.distance import geodesic
+try:
+    import osmnx as ox
+    import networkx as nx
+    from geopy.distance import geodesic
+    GEO_AVAILABLE = True
+except ImportError:
+    GEO_AVAILABLE = False
+    ox = None
+    nx = None
+    geodesic = None
+
 from typing import List, Tuple, Dict, Any, Optional
 from loguru import logger
 import math
@@ -15,8 +23,15 @@ class RouteEngine:
         Args:
             cities: List of city names to preload (e.g., ["Mumbai, India", "Delhi, India"])
         """
-        self.graphs: Dict[str, nx.MultiDiGraph] = {}
+        self.graphs: Dict[str, Any] = {}
         self.edge_nodes: List[Dict[str, Any]] = [] # Will be populated from the database
+        
+        if not GEO_AVAILABLE:
+            logger.warning(
+                "osmnx/networkx/geopy not installed — Route Engine running in STUB mode. "
+                "Route prediction is disabled. Install geo dependencies for full functionality."
+            )
+            return
         
         # Configure osmnx to use a local cache to avoid rate limits on subsequent runs
         ox.settings.use_cache = True
@@ -67,7 +82,7 @@ class RouteEngine:
         Returns:
             List of (lat, lon) road coordinates representing the path, or None if no path found.
         """
-        if city not in self.graphs:
+        if city not in self.graphs or not GEO_AVAILABLE:
             logger.error(f"Cannot route in {city}: Graph not loaded.")
             return None
             
@@ -126,7 +141,7 @@ class RouteEngine:
         Returns:
             List of dicts: {"node_id": str, "distance_m": float, "eta_s": float}
         """
-        if not route_coords or not self.edge_nodes:
+        if not route_coords or not self.edge_nodes or not GEO_AVAILABLE:
             return []
 
         speed_ms = current_speed_kmh / 3.6

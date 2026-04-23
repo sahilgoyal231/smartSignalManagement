@@ -3,6 +3,7 @@
 import { X, ShieldCheck, ToggleLeft, ToggleRight, Copy, Check } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { API } from "@/lib/api";
 
 export type VehicleType = "AMBULANCE" | "FIRE" | "POLICE" | "DISASTER";
 export type PriorityClass = 1 | 2 | 3;
@@ -70,7 +71,7 @@ export default function VehicleDrawer({ vehicle, onClose, onStatusChange }: Vehi
         setActionSuccess(null);
 
         try {
-            const res = await fetch(`http://localhost:8006/api/v1/vehicles/${vehicle.id}/${action}`, {
+            const res = await fetch(`${API.VEHICLE_REGISTRY}/api/v1/vehicles/${vehicle.id}/${action}`, {
                 method: 'PATCH',
             });
             if (!res.ok) {

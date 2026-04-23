@@ -10,6 +10,7 @@ import {
     Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { API } from "@/lib/api";
 import { useEffect } from "react";
 import { MockVehicle, MockNode, VehicleType, NodeStatus } from "@/components/map/LeafletMap";
 import LiveFeed from "@/components/map/LiveFeed";
@@ -59,11 +60,11 @@ export default function MapPage() {
         async function fetchInitialData() {
             try {
                 // Fetch vehicles (registry service port 8006)
-                const vRes = await fetch('http://localhost:8006/api/v1/vehicles');
+                const vRes = await fetch(`${API.VEHICLE_REGISTRY}/api/v1/vehicles`);
                 const vData = await vRes.json();
                 
                 // Fetch nodes (health monitor service port 8002)
-                const nRes = await fetch('http://localhost:8002/api/v1/nodes');
+                const nRes = await fetch(`${API.EDGE_REGISTRY}/api/v1/nodes`);
                 const nData = await nRes.json();
                 
                 // Map vehicles

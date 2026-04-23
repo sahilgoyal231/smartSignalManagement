@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { VehicleType } from "@/components/map/LeafletMap";
+import { WS_EVENT_STREAM } from "@/lib/api";
 
 export interface MockEvent {
     id: string;
@@ -43,7 +44,7 @@ export default function LiveFeed() {
         let reconnectTimeout: NodeJS.Timeout;
 
         const connect = () => {
-            ws = new WebSocket("ws://localhost:8001/api/v1/stream");
+            ws = new WebSocket(WS_EVENT_STREAM);
 
             ws.onmessage = (event) => {
                 try {

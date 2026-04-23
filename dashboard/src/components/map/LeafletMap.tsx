@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { WS_EVENT_STREAM } from "@/lib/api";
 
 export type VehicleType = "AMBULANCE" | "FIRE" | "POLICE" | "DISASTER";
 export type NodeStatus = "ACTIVE" | "PREEMPTING" | "OFFLINE";
@@ -187,7 +188,7 @@ export default function LeafletMap({ filterMode, initialVehicles, initialNodes, 
 
         const connect = () => {
             // Event Service runs on port 8001
-            ws = new WebSocket("ws://localhost:8001/api/v1/stream");
+            ws = new WebSocket(WS_EVENT_STREAM);
 
             ws.onopen = () => {
                 console.log("Connected to live map stream");

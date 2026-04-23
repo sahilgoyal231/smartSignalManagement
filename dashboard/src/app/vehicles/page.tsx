@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Search, Plus, Car, ShieldCheck, Users, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { API } from "@/lib/api";
 import VehicleDrawer, { Vehicle, VehicleType, PriorityClass } from "@/components/vehicles/VehicleDrawer";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -54,7 +55,7 @@ function RegisterVehicleModal({ open, onClose, onSuccess }: {
         setError(null);
 
         try {
-            const res = await fetch('http://localhost:8006/api/v1/vehicles', {
+            const res = await fetch(`${API.VEHICLE_REGISTRY}/api/v1/vehicles`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(form),
@@ -211,7 +212,7 @@ export default function VehiclesPage() {
 
     const fetchVehicles = useCallback(async () => {
         try {
-            const res = await fetch('http://localhost:8006/api/v1/vehicles?active_only=false');
+            const res = await fetch(`${API.VEHICLE_REGISTRY}/api/v1/vehicles?active_only=false`);
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
             const data = await res.json();
             

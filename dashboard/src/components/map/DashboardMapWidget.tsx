@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { MockVehicle, MockNode, VehicleType } from "./LeafletMap";
+import { API } from "@/lib/api";
 
 const LeafletMap = dynamic(() => import("./LeafletMap"), {
     ssr: false,
@@ -24,10 +25,10 @@ export default function DashboardMapWidget() {
     useEffect(() => {
         async function fetchInitialData() {
             try {
-                const vRes = await fetch('http://localhost:8006/api/v1/vehicles');
+                const vRes = await fetch(`${API.VEHICLE_REGISTRY}/api/v1/vehicles`);
                 const vData = await vRes.json();
                 
-                const nRes = await fetch('http://localhost:8002/api/v1/nodes');
+                const nRes = await fetch(`${API.EDGE_REGISTRY}/api/v1/nodes`);
                 const nData = await nRes.json();
                 
                 const mappedVehicles: MockVehicle[] = vData.map((v: any) => ({

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { Search, Activity, CheckCircle, XCircle, Clock, AlertTriangle, Timer, BarChart3 } from "lucide-react";
+import { API } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface PreemptionEvent {
@@ -36,7 +37,7 @@ export default function EventsPage() {
     useEffect(() => {
         async function fetchEvents() {
             try {
-                const res = await fetch('http://localhost:8001/api/v1/events?limit=100');
+                const res = await fetch(`${API.EVENT_SERVICE}/api/v1/events?limit=100`);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 setEvents(data);
