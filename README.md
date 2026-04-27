@@ -106,7 +106,7 @@ npm run dev
 |---|---|
 | VSU Firmware | Python 3.11, paho-mqtt, pyserial, RPi.GPIO |
 | Edge Node | Python 3.11, YOLOv8-nano, OpenCV, librosa, scipy |
-| Cloud | FastAPI, PostgreSQL, InfluxDB 2.x, Redis, Kafka, EMQX |
+| Cloud | FastAPI, PostgreSQL, InfluxDB 2.x, Redis (Pub/Sub), EMQX |
 | Dashboard | Next.js 14, React 18, Mapbox GL, Chart.js, Socket.IO |
 | Security | TLS 1.3, ECDSA-P256, JWT, X.509 certs |
 | DevOps | Docker, Kubernetes, Terraform, GitHub Actions |

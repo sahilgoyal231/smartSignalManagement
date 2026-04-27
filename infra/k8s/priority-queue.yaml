@@ -31,4 +31,4 @@ spec:
           limits:
             cpu: "1000m"
             memory: "1Gi"
-        # Purely reads from Kafka (route-engine output) and publishes to MQTT
+        # Reads from Redis Pub/Sub (route-engine output) and publishes to MQTT

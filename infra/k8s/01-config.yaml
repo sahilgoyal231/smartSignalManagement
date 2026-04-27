@@ -6,7 +6,7 @@ metadata:
 data:
   DB_HOST: "postgres-service.smart-signal.svc.cluster.local"
   DB_PORT: "5432"
-  KAFKA_BROKERS: "kafka-service.smart-signal.svc.cluster.local:9092"
+  REDIS_URL: "redis://redis-service.smart-signal.svc.cluster.local:6379"
   MQTT_BROKER: "mqtt-service.smart-signal.svc.cluster.local"
   MQTT_PORT: "1883"
   ENVIRONMENT: "production"

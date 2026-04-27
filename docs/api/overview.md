@@ -34,7 +34,7 @@ Track the health and status of the physical intersection edge nodes.
 - **`GET /api/v1/nodes/{node_id}`** - Get details for a specific node.
 - **`PATCH /api/v1/nodes/{node_id}/status`** - Manually force a node offline/online for maintenance.
 
-*(Note: Live heartbeats are ingested via MQTT/Kafka, not REST)*
+*(Note: Live heartbeats are ingested via MQTT/Redis Pub/Sub, not REST)*
 
 ---
 

@@ -106,7 +106,7 @@ async def process_vehicle_updates():
                 current_speed_kmh=speed_kmh
             )
 
-            # Fire Preemption Events to Kafka for each upcoming node
+            # Fire Preemption Events to Redis Pub/Sub for each upcoming node
             if upcoming_nodes:
                 logger.info(f"Vehicle {vehicle_id} will approach {len(upcoming_nodes)} intersections.")
                 for node_eta in upcoming_nodes:

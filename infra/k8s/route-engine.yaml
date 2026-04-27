@@ -31,4 +31,4 @@ spec:
           limits:
             cpu: "2000m"
             memory: "2Gi"
-        # No port exposed as route-engine is purely a Kafka stream processor
+        # No port exposed as route-engine is purely an internal Redis Pub/Sub stream processor

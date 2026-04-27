@@ -181,7 +181,7 @@ async def test_stale_node_checker_marks_offline(seeded_node):
 
 @pytest.mark.asyncio
 async def test_ota_update_api(async_client, mocker):
-    # Mock the kafka producer internally so it doesn't need to actually connect
+    # Mock the event producer internally so it doesn't need to actually connect
     mocker.patch.object(hm_main.event_producer, "_started", True)
     mock_send = mocker.patch.object(hm_main.event_producer, "send_event", new_callable=mocker.AsyncMock)
 
@@ -196,7 +196,7 @@ async def test_ota_update_api(async_client, mocker):
     assert response.status_code == 202
     assert response.json()["message"] == "OTA sequence initiated"
     
-    # Ensure Kafka command was emitted correctly
+    # Ensure event command was emitted correctly
     mock_send.assert_awaited_once()
     kwargs = mock_send.call_args.kwargs
     assert kwargs["topic"] == "node.alert"

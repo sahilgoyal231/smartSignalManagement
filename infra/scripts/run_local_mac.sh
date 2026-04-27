@@ -7,7 +7,7 @@ echo "🚀 Booting Smart Signal System (MacOS Native Layer)..."
 
 # Ensure runtime paths
 export PYTHONPATH="$(pwd)"
-export OVERRIDE_DB_URL="sqlite+aiosqlite:///seed.db"
+export POSTGRES_URL="sqlite+aiosqlite:///dev.db"
 
 # Source virtualenv
 if [ -f ".venv_new/bin/activate" ]; then

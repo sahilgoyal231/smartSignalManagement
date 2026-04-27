@@ -57,14 +57,14 @@ async def preemption_evaluator(
     1. Reads fused tracking state of all known vehicles.
     2. Calculates ETA to this intersection.
     3. If ETA < Threshold AND Confidence > Threshold:
-       a. Publishes PREEMPT request to cloud (so Priority Queue can arbitrate).
-       b. Cloud runs arbitration and sends back an ACK/NACK via MQTT (alert).
-       c. Here, we'll act autonomously if cloud disconnected, or wait for cloud.
-       For simplicity + edge autonomy, if Confidence is high enough, we preempt locally.
+        a. Publishes PREEMPT request to cloud (so Priority Queue can arbitrate).
+        b. Cloud runs arbitration and sends back an ACK/NACK via MQTT (alert).
+        c. Here, we'll act autonomously if cloud disconnected, or wait for cloud.
+        For simplicity + edge autonomy, if Confidence is high enough, we preempt locally.
     """
     # Track when we started holding
     current_hold_start = 0.0
-    
+
     while True:
         try:
             # Check for cloud arbitration messages

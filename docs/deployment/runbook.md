@@ -1,6 +1,6 @@
 # Smart Signal: Production Runbook
 
-This guide covers provisioning the AWS infrastructure, deploying the Kubernetes microservices, and rolling out the initial firmware payload to Edge Nodes.
+This guide covers the **self-hosted production deployment** using AWS infrastructure, Kubernetes, and the full containerized stack. For the free serverless deployment, see [FREE_DEPLOYMENT.md](../FREE_DEPLOYMENT.md).
 
 ## Prerequisites
 - `aws-cli` configured with Administrator access
@@ -10,7 +10,7 @@ This guide covers provisioning the AWS infrastructure, deploying the Kubernetes 
 ---
 
 ## 1. AWS Provisioning (Terraform)
-Navigate to the `infra/terraform` directory to spin up the VPC, RDS database, MSK (Kafka) cluster, and EKS environment.
+Navigate to the `infra/terraform` directory to spin up the VPC, RDS database, ElastiCache (Redis), and EKS environment.
 
 ```bash
 cd infra/terraform
@@ -26,9 +26,16 @@ aws eks update-kubeconfig --region us-east-1 --name smart-signal-eks
 
 ---
 
-## 2. Database & Kafka Prep
+## 2. Database & Redis Prep
 
-Extract the RDS endpoint and MSK broker string from the Terraform output. Inject these into your Kubernetes ConfigMap/Secrets prior to deploying.
+Extract the RDS endpoint and ElastiCache Redis endpoint from the Terraform output. Inject these into your Kubernetes ConfigMap/Secrets prior to deploying.
+
+### Required Config Values
+| Source | Config Key | Example |
+|--------|-----------|---------|
+| RDS | `DB_HOST` | `smart-signal-rds.xxxxx.ap-south-1.rds.amazonaws.com` |
+| ElastiCache | `REDIS_URL` | `redis://smart-signal-redis.xxxxx.cache.amazonaws.com:6379` |
+| EMQX (self-hosted) | `MQTT_BROKER` | `mqtt-service.smart-signal.svc.cluster.local` |
 
 *Note: You must manually run the Alembic database migrations from the `vehicle-registry` or `health-monitor` service before the background workers start.*
 

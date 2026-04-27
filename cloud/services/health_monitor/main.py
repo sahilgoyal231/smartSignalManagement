@@ -34,7 +34,7 @@ class OTAUpdateRequest(BaseModel):
 # ─────────────────────────────────────────────
 
 async def process_health_events():
-    """Consumes Kafka messages matching heartbeat and fault topics."""
+    """Consumes Redis Pub/Sub messages matching heartbeat and fault topics."""
     logger.info("Starting Health Monitor Event Bus processor...")
     try:
         await event_health_consumer.start()
@@ -212,7 +212,7 @@ async def health_check():
 async def trigger_ota_update(node_id: str, request: OTAUpdateRequest):
     """
     Triggers an Over-The-Air firmware update on a specific EdgeNode.
-    Emits a command payload to the `node.alert` Kafka topic for routing.
+    Emits a command payload to the `node.alert` Redis Pub/Sub channel for routing.
     """
     if not event_producer._started:
         raise HTTPException(status_code=503, detail="Event producer not ready")

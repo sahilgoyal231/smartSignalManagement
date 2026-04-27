@@ -26,7 +26,7 @@ resolver = PriorityResolver(stale_timeout_s=30.0)
 
 async def broadcast_winner(node_id: str):
     """
-    Constructs and fires a `node.alert` over Kafka which instructs
+    Constructs and fires a `node.alert` over Redis Pub/Sub which instructs
     the target node to actually execute the preemption.
     """
     winner_req = resolver.get_winner_payload(node_id)

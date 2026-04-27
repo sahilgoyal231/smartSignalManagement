@@ -6,10 +6,8 @@ version: "3.9"
 # Services:
 #   - postgres        : Vehicle registry, event log (Port 5432)
 #   - influxdb        : Time-series telemetry (Port 8086)
-#   - redis           : Real-time intersection state cache (Port 6379)
+#   - redis           : Real-time state cache + Event Bus via Pub/Sub (Port 6379)
 #   - emqx            : MQTT broker for all IoT messaging (Ports 1883, 8883, 18083)
-#   - zookeeper       : Required by Kafka
-#   - kafka           : Event streaming backbone (Port 9092)
 #   - grafana         : Monitoring dashboard (Port 3001)
 #   - cloud-api       : FastAPI cloud backend (Port 8000)
 #
@@ -34,7 +32,7 @@ volumes:
   redis_data:
   emqx_data:
   emqx_log:
-  kafka_data:
+
   grafana_data:
 
 services:
@@ -159,64 +157,7 @@ services:
       retries: 5
       start_period: 30s
 
-  # ──────────────────────────────────────────────────────────
-  # Zookeeper (required by Kafka)
-  # ──────────────────────────────────────────────────────────
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.6.0
-    container_name: ss_zookeeper
-    restart: unless-stopped
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME:   2000
-    networks:
-      smartsignal-net:
-        ipv4_address: 172.20.0.14
-    healthcheck:
-      test: ["CMD", "bash", "-c", "echo ruok | nc localhost 2181"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
 
-  # ──────────────────────────────────────────────────────────
-  # Kafka (event streaming backbone)
-  # ──────────────────────────────────────────────────────────
-  kafka:
-    image: confluentinc/cp-kafka:7.6.0
-    container_name: ss_kafka
-    restart: unless-stopped
-    depends_on:
-      zookeeper:
-        condition: service_healthy
-    environment:
-      KAFKA_BROKER_ID:                        1
-      KAFKA_ZOOKEEPER_CONNECT:                zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS:             PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP:   PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME:       PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE:        "true"
-      # Pre-create topics
-      KAFKA_CREATE_TOPICS: >
-        vehicle.update:3:1,
-        node.preempt:3:1,
-        node.alert:3:1,
-        system.fault:1:1,
-        node.heartbeat:1:1
-    volumes:
-      - kafka_data:/var/lib/kafka/data
-    ports:
-      - "9092:9092"
-      - "29092:29092"    # External access from host
-    networks:
-      smartsignal-net:
-        ipv4_address: 172.20.0.15
-    healthcheck:
-      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
-      interval: 20s
-      timeout: 10s
-      retries: 5
-      start_period: 40s
 
   # ──────────────────────────────────────────────────────────
   # Grafana (monitoring & KPI dashboards)
@@ -280,8 +221,6 @@ services:
         condition: service_healthy
       emqx:
         condition: service_healthy
-      kafka:
-        condition: service_healthy
     environment:
       ENVIRONMENT:         development
       # PostgreSQL (connects to the postgres service by container name)
@@ -304,9 +243,7 @@ services:
       MQTT_BROKER_PORT:    1883          # plain inside docker network
       MQTT_BROKER_USER:    ${MQTT_BROKER_USER:-ss_service}
       MQTT_BROKER_PASSWORD: ${MQTT_BROKER_PASSWORD:-mqttchangeme}
-      # Kafka
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KAFKA_CONSUMER_GROUP:    smart-signal-group
+      # Event Bus (uses Redis Pub/Sub — no separate Kafka needed)
       # JWT
       JWT_SECRET_KEY:      ${JWT_SECRET_KEY:-devjwtsecret}
       JWT_ALGORITHM:       RS256

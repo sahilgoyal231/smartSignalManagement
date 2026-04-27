@@ -13,7 +13,7 @@ from cloud.services.vehicle_registry.main import app as vehicle_app
 async def global_lifespan(app: FastAPI):
     """
     Manages the lifespans of all mounted microservices so their background tasks
-    and MQTT/Kafka connections start up and tear down cleanly in a single process.
+    and MQTT/Redis Pub/Sub connections start up and tear down cleanly in a single process.
     """
     async with AsyncExitStack() as stack:
         await stack.enter_async_context(event_lifespan(event_app))
