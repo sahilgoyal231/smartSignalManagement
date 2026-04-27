@@ -61,7 +61,7 @@ class RouteEngine:
         self.edge_nodes = nodes
         logger.debug(f"RouteEngine updated with {len(self.edge_nodes)} EdgeNodes.")
 
-    def _heuristic(self, node1: int, node2: int, graph: nx.MultiDiGraph) -> float:
+    def _heuristic(self, node1: int, node2: int, graph: "nx.MultiDiGraph") -> float:
         """
         Heuristic function for A* (straight-line distance).
         Args:
